@@ -1,0 +1,81 @@
+# This is an auto-generated Django model module.
+# You'll have to do the following manually to clean this up:
+#   * Rearrange models' order
+#   * Make sure each model has one field with primary_key=True
+#   * Make sure each ForeignKey has `on_delete` set to the desired behavior.
+#   * Remove `managed = False` lines if you wish to allow Django to create, modify, and delete the table
+# Feel free to rename the models, but don't rename db_table values or field names.
+from django.db import models
+
+
+class Category(models.Model):
+    m_cat_id = models.CharField(max_length=24)
+    name = models.CharField(max_length=255)
+    bucket = models.CharField(max_length=50)
+    status = models.CharField(max_length=3)
+    billing_rate = models.FloatField()
+    billing_type = models.CharField(max_length=3)
+    is_children_category = models.IntegerField()
+    is_marketing = models.IntegerField()
+    type = models.CharField(max_length=11, blank=True, null=True)
+    created_at = models.DateTimeField()
+    updated_at = models.DateTimeField()
+    deleted_at = models.DateTimeField(blank=True, null=True)
+    pricing_format = models.CharField(max_length=255)
+    pricing_format_type = models.CharField(max_length=255)
+    token_amount_percentage = models.FloatField()
+    max_token_amount = models.IntegerField()
+    available_view = models.CharField(max_length=255)
+    default_view_mobile = models.CharField(max_length=255)
+    default_view_app = models.CharField(max_length=255)
+    default_view = models.CharField(max_length=255)
+    what_next_image_path = models.CharField(max_length=255)
+    what_next_url = models.CharField(max_length=255)
+    banner_image_path = models.CharField(max_length=255)
+    banner_url = models.CharField(max_length=255)
+    thumbnail_image_path = models.CharField(max_length=255)
+    thumbnail_url = models.CharField(max_length=255)
+    background_image_path = models.CharField(max_length=255)
+    background_url = models.CharField(max_length=255)
+    icon_image_path = models.CharField(max_length=255)
+    icon_url = models.CharField(max_length=255)
+    order_flow_id = models.IntegerField()
+    buyer_guide_url = models.CharField(max_length=255)
+    seo_url = models.CharField(max_length=255)
+    page_title = models.CharField(max_length=255)
+    meta_keyword = models.CharField(max_length=510)
+    meta_description = models.CharField(max_length=1020)
+    context = models.CharField(max_length=4)
+    subscription_fee_months_1 = models.FloatField()
+    subscription_fee_months_3 = models.FloatField()
+    subscription_fee_months_12 = models.FloatField()
+    enterprise_subscription_months_1 = models.FloatField()
+    enterprise_subscription_months_3 = models.FloatField()
+    enterprise_subscription_months_12 = models.FloatField()
+    auto_renewal_type = models.CharField(max_length=9)
+    total_mkt_spent = models.FloatField()
+    sort_order = models.IntegerField()
+    max_dfc_percentage = models.FloatField()
+    max_dfc_value = models.IntegerField()
+    available_modules = models.TextField(blank=True, null=True)
+    display_on_root = models.CharField(max_length=1)
+    no_of_filter_display = models.IntegerField()
+    fcts_condition = models.TextField(blank=True, null=True)
+    source_category_id = models.IntegerField(blank=True, null=True)
+    available_modules_new = models.TextField(blank=True, null=True)
+    is_visible_on_seller_onboarding = models.IntegerField()
+    is_visible_on_listing_onboarding = models.IntegerField()
+    is_visible_on_shop_page = models.IntegerField()
+    is_visible_on_home_page = models.IntegerField()
+    grouping_context = models.CharField(max_length=255, blank=True, null=True)
+    is_condition = models.TextField(blank=True, null=True)
+    is_mmyt = models.IntegerField()
+    is_placeholder = models.IntegerField()
+    is_example_placeholder = models.CharField(max_length=255)
+    is_tooltip = models.CharField(max_length=255)
+    allow_bulk_listing = models.TextField(blank=True, null=True)
+    icon_class = models.CharField(max_length=255, blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'category'
