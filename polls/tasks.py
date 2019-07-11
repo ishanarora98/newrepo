@@ -1,12 +1,16 @@
 from celery import shared_task
 import bson
-from polls.models import Category,CouponApprOnListing
+from polls.models import Category,CouponApprOnListing,CouponMapping
 from pymongo import MongoClient
 import string
 from django.db.models import manager
 from django.db import connection
 import datetime
 cursor = connection.cursor()
+null = None
+def divide_chunks(l,n):
+    for i in range(0,len(l),n):
+        yield l[i:i+n]
 
 def maxDFCLimitCheck(coupon_code, coupon_id, coupon_end_date, listing , discount, coupon_discount_type, funded_by, droom_portion):
     if(funded_by=='seller' and droom_portion==0):
@@ -176,8 +180,27 @@ def coupon_controller(valid,coupon_code,coupon_discount_type,discount):
     if i>0 and not wrong_city:
         listings = db.cmp_listings.aggregate([
             {"$match": where},
-            {"$project": {"_id": 1,'category_id':1,'total_payout_value':1,'selling_price':1}}
+            {"$project": {"_id": 1,'category_id':1,'total_payout_value':1,'selling_price':1,'lid':1,'user_id':1,'quick_sell':1}}
         ])
+        user_ids = list(map(lambda listing: listing['user_id'], listings))
+        params = {}
+        f_vendors = []
+        f_users = {}
+        chunk = list(divide_chunks(user_ids,10000))
+        for user_id in chunk:
+            query = Users.objects.filter(id__in=user_id)
+            users = {}
+            for user in query:
+                users[user.id] = user.vendor_id
+
+            vendor_ids = list(users.values())
+            vendors_query = Vendors.objects.filter(id__in=vendor_ids).filter(suspended_dmp_status=1)
+            vendors = []
+            for v in vendors_query:
+                vendors.append(v.id)
+            f_users = {**f_users,**users}
+            f_vendors = f_vendors + vendors
+
         for listing in listings:
             if(coupon_discount_type=="price_override"):
                 discount_new = listing['selling_price'] - discount
@@ -185,13 +208,41 @@ def coupon_controller(valid,coupon_code,coupon_discount_type,discount):
                     discount = discount_new
             couponCheckList = maxDFCLimitCheck(coupon_code,coupon_id,coupon_end_date,listing,discount,coupon_discount_type,funded_by,droom_portion)
             if not couponCheckList:
-                continue
+                vendor_id = f_users[listing['user_id']]
+                if Coupon['applicable_for']!='both':
+                    if Coupon['applicable_for']=='proseller':
+                        if vendor_id==null:
+                            continue
+
+                if vendor_id in f_vendors:
+                    continue
+
+                if Coupon['applicable_on_listings']!='all':
+                    if Coupon['applicable_on_listings']=='regular':
+                        if int(listing['quick_sell'])==1:
+                            continue
+
+                elif Coupon['applicable_on_listings']=='quicksell':
+                    if int(listing['quick_sell']==0):
+                        continue
+
+                mapping = CouponMapping.objects.filter(listing_id=listing['lid']).filter(coupon_id=Coupon['_id'])
+                timestamp = datetime.datetime.now()
+                if mapping:
+                    mapping.status = 'R'
+                    mapping.promotion_name=Coupon['promotion_name']
+                    mapping.updated_at = timestamp
+                    mapping.save()
+                else:
+                    new_mapping = CouponMapping(coupon_id=Coupon['_id'],listing_id=listing['lid'],promotion_name=Coupon['promotion_name'],code=coupon_code,status='R',
+                                                created_at=timestamp,updated_at=timestamp)
+                    new_mapping.save()
             else:
                 if couponCheckList['deleted_listing_ids'][0]:
-                    deleted_listing_ids = couponCheckList['deleted_listing_ids']
+                    deleted_listing_ids = deleted_listing_ids + couponCheckList['deleted_listing_ids'][0]
 
                 if couponCheckList['to_remove_lids'][0]:
-                    to_remove_lids = couponCheckList['to_remove_lids'][0]
+                    to_remove_lids = to_remove_lids + couponCheckList['to_remove_lids'][0]
 
     else:
         b = 1

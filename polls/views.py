@@ -15,6 +15,7 @@ from django.core.serializers.json import DjangoJSONEncoder
 import logging
 from .savelogs import savelogs
 from bson import ObjectId
+import threading
 logger = logging.getLogger(__name__)
 
 def unique(l):
@@ -22,18 +23,37 @@ def unique(l):
     unique_list = list(list_set)
     return unique_list
 
-def validateCouponsApproval(request):
-    data = {
-        "coupon_code": "DMP1",
-        "coupon_id": ObjectId('5c810a60886cf89d188b4567'),
-        "coupon_discount": 900.0,
-        "coupon_discount_type": "cashback",
-        "coupon_end_date": "2019-09-07T12:08:35Z",
-        "coupon_exclude_ids": []
-    }
-    client = MongoClient(host='13.232.224.2', port=27017, username='root', password='profsnapeisdon')
-    db = client['droom']
-    collection = db['coupons']
+client = MongoClient(host='13.232.224.2', port=27017, username='root', password='profsnapeisdon')
+db = client['droom']
+collection = db['coupons']
+
+def threads(request):
+    cashback_coupons = collection.find({"code":"DMP1"})
+    jobs = []
+    for i in cashback_coupons:
+        data = {
+            "coupon_code": i['code'],
+            "coupon_id": i['_id'],
+            "coupon_discount": i['discount'],
+            "coupon_discount_type": i['discount_type'],
+            "coupon_end_date": i['end_date'],
+            "coupon_exclude_ids": []
+        }
+        thread = threading.Thread(target=validateCouponsApproval,args=(data,))
+        jobs.append(thread)
+
+    for j in jobs:
+        j.start()
+
+    for j in jobs:
+        j.join()
+
+    return HttpResponse("List Processing Complete")
+
+def printcode(data):
+    print(data['coupon_code']+" ")
+
+def validateCouponsApproval(data):
     try:
         response = HttpResponse("Hello!")
         null = None
@@ -98,25 +118,4 @@ def validateCouponsApproval(request):
             db.coupons.update_one({"_id": coupon_id}, {"$set": {"pending_approval": 0}})
 
 
-       # for s in collection.find({"code": "transparent"}):
-       #     response.write("<p>")
-       #     response.write(s['code'] + " " + s['start_date'])
-       # doc = collection.find().sort("start_date")
-       # for obj in doc:
-       #     response.write("<p>")
-       #     response.write(obj['code'])
-       # res = collection.find().limit(2)
-       # for i in res:
-       #     response.write("<p>")
-       #     response.write(i['code'])
-       # USERS ACROSS A SINGLE COUPON
-       # obj = collection.find_one({"code": "RFR50"})
-       # list = obj['users']
-       # for i in list:
-       #     response.write("<p>")
-       #     obj = Users.objects.get(user_id=i)
-       #     response.write(obj.user_name)
-       #     response.write("<p>")
-
-       #return response
 
